@@ -103,14 +103,20 @@
           </p>
           <!-- Biografía con lógica de truncado y leer más -->
           <p><strong>Biografía:</strong>
-            <!-- Si desplegarBiografia[i] es verdadero, muestra todo, si no, trunca a 10 caracteres -->
             {{ desplegarBiografia[i] ? usuario.comment : (usuario.comment | truncate: 10) }}
           </p>
 
           <!-- Botón para alternar entre mostrar más o menos en la biografía -->
           <button (click)="toggleBiografia(i)" class="leer-mas">
             {{ desplegarBiografia[i] ? 'Leer menos' : 'Leer más' }}
-          </button>        
+          </button>
+          
+          <p><strong>Experiencias:</strong></p>
+          <ul>
+            <li *ngFor="let experiencia of usuario.experiencies">
+              {{ experiencia.description }} <!-- Mostrar la descripción de la experiencia -->
+            </li>
+          </ul>
 
           <button (click)="prepararEdicion(usuario, i)" class="modificar">Modificar</button>
         </div>

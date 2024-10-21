@@ -5,7 +5,8 @@ import { User } from '../../models/user.model'; // Importar el modelo User desde
 import { UserService } from '../../services/user.service'; // Importar el servicio UserService desde la subcarpeta services
 import { TruncatePipe } from '../../pipes/truncate.pipe';
 import { MaskEmailPipe } from '../../pipes/maskEmail.pipe';
-
+import { ExperienciaService} from '../../services/experiencia.service'; // Importar el servicio ExperienciaService
+import { Experiencia } from '../../models/experiencia.model'; // Importar el modelo Experiencia
 
 @Component({
   selector: 'app-usuaris',
@@ -18,14 +19,15 @@ import { MaskEmailPipe } from '../../pipes/maskEmail.pipe';
 export class UsuarisComponent implements OnInit {
   usuarios: User[] = []; // Lista de usuarios con tipado User
   desplegado: boolean[] = []; // Controla si el desplegable de cada usuario está abierto o cerrado
-  desplegarBiografia: boolean[] = [];
-  mostrarPassword: boolean[] = []; // Array para controlar la visibilidad de la contraseña
+  desplegarBiografia: boolean[] = []; // Controla si la biografía de cada usuario está desplegada
+  mostrarPassword: boolean[] = []; // Controla si la contraseña de cada usuario está visible
 
   nuevoUsuario: User = {
     name: '',
     mail: '', // Añadir el campo email
     password: '',
-    comment: ''
+    comment: '',
+    experiencies: [] // Añadir el campo experiencias
   };
 
   confirmarPassword: string = ''; // Campo para confirmar la contraseña
@@ -33,15 +35,23 @@ export class UsuarisComponent implements OnInit {
   indiceEdicion: number | null = null; // Almacena el índice del usuario en edición
   formSubmitted: boolean = false; // Indica si se ha enviado el formulario
 
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService, private experienciasService: ExperienciaService) {}
 
   ngOnInit(): void {
-    // Cargar usuarios desde el UserService
-    this.userService.getUsers()
-      .subscribe(data => {
-        this.usuarios = data;
-        this.desplegado = new Array(data.length).fill(false);
+    this.userService.getUsers().subscribe(data => {
+      this.usuarios = data;
+      this.desplegado = new Array(data.length).fill(false);
+      // Obtener las descripciones de las experiencias para cada usuario
+      this.usuarios.forEach(usuario => {
+        if (usuario.experiencies) {
+          usuario.experiencies.forEach((exp, index) => {
+            this.experienciasService.getExperienciaById(exp as unknown as string).subscribe((experiencia: Experiencia) => {
+              usuario.experiencies![index] = experiencia;  // Reemplazar el ID por el objeto Experiencia completo
+            });
+          });
+        }
       });
+    });
   }
 
   // Función para agregar o modificar un usuario
@@ -71,16 +81,16 @@ export class UsuarisComponent implements OnInit {
         name: this.nuevoUsuario.name,
         mail: this.nuevoUsuario.mail,
         password: this.nuevoUsuario.password,
-        comment: this.nuevoUsuario.comment
+        comment: this.nuevoUsuario.comment,
+        experiencies: this.nuevoUsuario.experiencies
       };
   
       // Enviar el usuario a la API a través del UserService
       this.userService.addUser(usuarioJSON).subscribe(response => {
         console.log('Usuario agregado:', response);
         
-        // Agregar el usuario con el _id generado por la API al array de usuarios en el frontend
-        this.usuarios.push({ ...usuarioJSON, _id: response._id });
-        this.desplegado.push(false); // Añadir un nuevo estado de desplegado
+        this.usuarios.push({ ...usuarioJSON, _id: response._id, experiencies: response.experiencies });
+        this.desplegado.push(false);
       });
     }
   
@@ -95,7 +105,8 @@ export class UsuarisComponent implements OnInit {
       name: '',
       mail: '', // Limpiar el campo email
       password: '',
-      comment: ''
+      comment: '',
+      experiencies: [] // Limpiar el campo experiencias
     };
     this.confirmarPassword = ''; // Reiniciar el campo de confirmar contraseña
     this.formSubmitted = false; // Restablecer el estado del formulario para no mostrar errores
@@ -142,6 +153,7 @@ export class UsuarisComponent implements OnInit {
     this.desplegado[index] = !this.desplegado[index];
   }
 
+  
   // Método para alternar entre mostrar más o menos texto
   toggleBiografia(index: number) {
     // Cambia el estado entre desplegado y no desplegado
